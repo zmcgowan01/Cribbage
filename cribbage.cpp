@@ -17,6 +17,34 @@ struct Card{
 
 const int HAND_SIZE = 5;
 
+//count the number of different card combinations
+//can be added up to equal 15 (for point scoring)
+//needs to be recursive
+//returns the number combos to make 15
+int count_fifteens(int &numCalcs, int sum, list<Card*> &hand, list<Card*>::iterator it){
+    Card* currCard;
+
+    int count = 0;
+    int internal_sum = sum;
+
+    if(it == hand.end())
+        return 0;
+
+    while(it != hand.end()){
+        currCard = *it;
+        internal_sum += currCard->value;
+        it++;
+        if(internal_sum == 15)
+            count++;
+        else if(internal_sum < 15){
+            count += count_fifteens(numCalcs, internal_sum, hand, it);
+        }
+        internal_sum -= currCard->value;
+        numCalcs++;
+    }
+    return count;
+}
+
 int main() {
     // Write C++ code here
     
@@ -36,6 +64,8 @@ int main() {
             currCard = new Card;
             //cout<<currCard<<"\n";
             currCard->value = j;
+            if(currCard->value > 10)
+                currCard->value = 10;
             switch(j){
                 case 1:
                     currCard->symbol = "A";
@@ -163,20 +193,29 @@ int main() {
    }
 
     //test print my hand
-    std::cout << "my hand: \n";
+    cout << "\nmy hand: \n";
     for (it=myHand.begin(); it!=myHand.end(); ++it){
         currCard = *it;
         cout<<currCard->symbol<<currCard->suit<<'\n';
     }
-    std::cout << '\n';
+    int numCalcs = 0;
+    numCalcs = 0;
+    it=myHand.begin();
+    int count = count_fifteens(numCalcs,0, myHand, it);
+    cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
+
+
 
     //test print opponent's hand
-    std::cout << "opponent's hand: \n";
+    cout << "opponent's hand: \n";
     for (it=opponentHand.begin(); it!=opponentHand.end(); ++it){
         currCard = *it;
         cout<<currCard->symbol<<currCard->suit<<'\n';
     }
-    std::cout << '\n';
+    numCalcs = 0;
+    it=opponentHand.begin();
+    count = count_fifteens(numCalcs, 0, opponentHand, it);
+    cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
 
     return 0;
 }
