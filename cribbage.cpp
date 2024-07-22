@@ -45,12 +45,60 @@ int count_fifteens(int &numCalcs, int sum, list<Card*> &hand, list<Card*>::itera
     return count;
 }
 
+//trimming unnecessary checks by detecting when the end
+//the highest level recursive call reaches the end of 
+//the hand and the running sum is too low to reach 15.
+//At that point, there is no need to go further into the
+//recursive call stack with lower numbers
+int count_fifteens_trim(int &numCalcs, int sum, list<Card*> &hand, list<Card*>::iterator it){
+    Card* currCard;
+
+    int count = 0;
+    int temp = 0;
+    int internal_sum = sum;
+
+    if(it == hand.end())
+        return -1;
+
+    while(it != hand.end()){
+        currCard = *it;
+        internal_sum += currCard->value;
+        it++;
+        if(internal_sum == 15)
+            count++;
+        else if(internal_sum < 15){
+            temp = count_fifteens_trim(numCalcs, internal_sum, hand, it);
+            if(temp == -1)
+                break;
+            else
+                count += temp;
+        }
+        internal_sum -= currCard->value;
+        numCalcs++;
+    }
+    return count;
+}
+
+void assignCustomHands(list<Card*> &hand1, list<Card*> &hand2,vector<Card*> &deck){
+    hand1.push_back(deck[11]);
+    hand1.push_back(deck[12]);
+    hand1.push_back(deck[3]);
+    hand1.push_back(deck[1]);
+    hand1.push_back(deck[0]);
+
+    hand2.push_back(deck[6]);
+    hand2.push_back(deck[6]);
+    hand2.push_back(deck[4]);
+    hand2.push_back(deck[0]);
+    hand2.push_back(deck[0]);
+}
+
 int main() {
     // Write C++ code here
     
     Card* currCard;
-    vector<Card*> myDeck;
-    stack<Card*> shuffledDeck, testDeck;
+    vector<Card*> myDeck, testDeck;
+    stack<Card*> shuffledDeck, shuffledTestDeck;
     //using lists for the hands because they are doubly linked lists, placing
     //cards in descending order of value reduces time complexity of counting
     //points in the hand
@@ -122,17 +170,21 @@ int main() {
                     break;
             }
             myDeck.push_back(currCard);
+            testDeck.push_back(currCard);
             //cout<<arrayIndex<<'\n';
         }
     }
     cout<<"Deck generated!\n";
     
+    //assign specific cards to hands for unit testing
+    //assignCustomHands(myHand, opponentHand, testDeck);
+
     //shuffle the deck
     for(int i = 52; i > 0; i--){
         srand(time(NULL));
         int r = rand() % i;
         shuffledDeck.push(myDeck[r]);
-        testDeck.push(myDeck[r]);
+        shuffledTestDeck.push(myDeck[r]);
         //cout<<myDeck[r]->symbol<<"  "<<myDeck[r]->suit<<'\n';
         myDeck.erase(myDeck.begin() + r);
     }
@@ -141,21 +193,11 @@ int main() {
     
     //test print the entire deck
     for(int i = 0; i < 52; i++){
-        cout<<testDeck.top()->symbol<<testDeck.top()->suit<<'\n';
-        testDeck.pop();
+        cout<<shuffledTestDeck.top()->symbol<<shuffledTestDeck.top()->suit<<'\n';
+        shuffledTestDeck.pop();
     }
 
    //deal the cards, order the cards in descending order
-   
-   
-   /*cout<<"Test of iterator object\n";
-   myHand.push_back(shuffledDeck.top());
-   it=myHand.begin();
-   cout<<"shuffledDeck.top: "<<shuffledDeck.top()->value<<"\n";
-   //cout<<"*it: "<<*it<<"\n";
-
-   currCard = *it;
-   cout<<"currCard value: "<<currCard->value<<"\n";*/
 
    while(myHand.size() < HAND_SIZE && opponentHand.size() < HAND_SIZE){
     if(myHand.empty()){
@@ -192,6 +234,7 @@ int main() {
     }
    }
 
+
     //test print my hand
     cout << "\nmy hand: \n";
     for (it=myHand.begin(); it!=myHand.end(); ++it){
@@ -201,7 +244,7 @@ int main() {
     int numCalcs = 0;
     numCalcs = 0;
     it=myHand.begin();
-    int count = count_fifteens(numCalcs,0, myHand, it);
+    int count = count_fifteens_trim(numCalcs,0, myHand, it);
     cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
 
 
@@ -214,7 +257,7 @@ int main() {
     }
     numCalcs = 0;
     it=opponentHand.begin();
-    count = count_fifteens(numCalcs, 0, opponentHand, it);
+    count = count_fifteens_trim(numCalcs, 0, opponentHand, it);
     cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
 
     return 0;
