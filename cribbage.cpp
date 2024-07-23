@@ -13,6 +13,13 @@ using namespace std;
 
 const int HAND_SIZE = 5;
 
+struct Card{
+    int value;
+    int run_value;
+    string symbol;
+    string suit;
+};
+
 //count the number of different card combinations
 //can be added up to equal 15 (for point scoring)
 //needs to be recursive
