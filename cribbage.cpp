@@ -6,7 +6,7 @@
 #include <vector>
 #include <list>
 #include <time.h>
-#include "Card.h"
+#include "Deck.h"
 
 using namespace std;
 

@@ -1,8 +1,12 @@
-#include "Card.h"
 #include <string>
+#include <vector>
+#include "Card.h"
 
 class Deck {       // The class
-  public:             // Access specifier
-    int myNum;        // Attribute (int variable)
-    string myString;  // Attribute (string variable)
+  private:
+    vector<Card*> myDeck, testDeck;
+  
+  public:             
+    int myNum;        
+    string myString;  
 };
