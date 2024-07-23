@@ -6,15 +6,10 @@
 #include <vector>
 #include <list>
 #include <time.h>
+#include "Card.h"
 
 using namespace std;
 
-struct Card{
-    int value;
-    int run_value;
-    string symbol;
-    string suit;
-};
 
 const int HAND_SIZE = 5;
 
