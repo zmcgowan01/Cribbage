@@ -11,6 +11,7 @@ using namespace std;
 
 struct Card{
     int value;
+    int run_value;
     string symbol;
     string suit;
 };
@@ -79,16 +80,121 @@ int count_fifteens_trim(int &numCalcs, int sum, list<Card*> &hand, list<Card*>::
     return count;
 }
 
+//function to count the number of pairs in the hand
+//this includes 3 of a kind (3 pairs) and 4 of a kind
+//(six pairs)
+//O(2n) time complexity
+int count_pairs(list<Card*> &hand){
+    Card *currCard1, *currCard2;
+    int count = 0;
+    list<Card*>::iterator it1, it2;
+
+    for (it1=hand.begin(); it1!=hand.end(); it1++){
+        currCard1 = *it1;
+        it2=it1;
+        for (it2++; it2!=hand.end(); it2++){
+            currCard2 = *it2;
+            if(currCard1->symbol == currCard2->symbol)
+                count++;
+            else
+                break;
+        }
+    }
+    return count;
+}
+
+int count_runs(list<Card*> hand){
+    list<Card*> pair_cards, no_pair_hand;
+    Card *currCard1, *currCard2;
+    int count = 0;
+    int current_run_length = 1;
+    int previous_card= 0;
+    int multiplier = 1;
+    bool double_run = false;
+    list<Card*>::iterator it1, it2, it3;
+    it1 = hand.begin();
+    it2=it1;
+    it2++;
+    //separate the cards into one hand with no repeats
+    //and another hand with all duplicate cards
+    while(it2 != hand.end()){
+        currCard1 = *it1;
+        currCard2 = *it2;        
+        if(currCard1->run_value == currCard2->run_value){
+            pair_cards.push_back(currCard1);
+        }
+        else{
+            no_pair_hand.push_back(currCard1);
+        }
+        hand.pop_front();
+        it1 = hand.begin();
+        it2 = it1;
+        it2++;
+    }
+
+    //there is one card left
+    currCard1 = *it1;
+    no_pair_hand.push_back(currCard1);
+
+
+    //check the non-repeat hand for runs, if a run exists,
+    //check the duplicate cards for double runs
+    for (it1=no_pair_hand.begin(); it1!=no_pair_hand.end(); it1++){
+        currCard1 = *it1;
+        it2=it1;
+        it2++;
+        previous_card = currCard1->run_value;
+        while(it2!=no_pair_hand.end()){
+            currCard2 = *it2;
+            if(previous_card == (currCard2->run_value+1)){
+                current_run_length++;
+                previous_card = currCard2->run_value;
+            }
+            else
+                break;
+            it2++;
+        }
+        it2--;  //now it2 points to the last number in the run
+        it1 = it2; //avoids double counting runs longer than 3
+        if(current_run_length >=3){
+            for(int i=0; i<current_run_length; i++){
+                currCard2 = *it2;
+                it3 = pair_cards.begin();
+                while(it3 != pair_cards.end()){
+                    currCard1 = *it3;
+                    if(currCard1->run_value == currCard2->run_value){
+                        if(double_run)
+                            multiplier = 4; //double double run detected
+                        else
+                            multiplier++;   //should work for double and triple runs
+                    }
+                    it3++;
+                }
+                if(multiplier > 1){
+                    double_run = true; //saves the information for a double double run
+                                        //in which case incrementing the multiplier will
+                                        //not suffice, multiplier should be doubled
+                }
+                it2--;
+            }
+            count += current_run_length * multiplier;
+        }
+        current_run_length = 1;
+    }
+    return count;
+}
+
+
 void assignCustomHands(list<Card*> &hand1, list<Card*> &hand2,vector<Card*> &deck){
     hand1.push_back(deck[11]);
-    hand1.push_back(deck[12]);
-    hand1.push_back(deck[3]);
-    hand1.push_back(deck[1]);
-    hand1.push_back(deck[0]);
+    hand1.push_back(deck[10]);
+    hand1.push_back(deck[9]);
+    hand1.push_back(deck[9]);
+    hand1.push_back(deck[8]);
 
-    hand2.push_back(deck[6]);
-    hand2.push_back(deck[6]);
-    hand2.push_back(deck[4]);
+    hand2.push_back(deck[3]);
+    hand2.push_back(deck[2]);
+    hand2.push_back(deck[1]);
     hand2.push_back(deck[0]);
     hand2.push_back(deck[0]);
 }
@@ -112,6 +218,7 @@ int main() {
             currCard = new Card;
             //cout<<currCard<<"\n";
             currCard->value = j;
+            currCard->run_value = j;
             if(currCard->value > 10)
                 currCard->value = 10;
             switch(j){
@@ -177,7 +284,7 @@ int main() {
     cout<<"Deck generated!\n";
     
     //assign specific cards to hands for unit testing
-    //assignCustomHands(myHand, opponentHand, testDeck);
+    assignCustomHands(myHand, opponentHand, testDeck);
 
     //shuffle the deck
     for(int i = 52; i > 0; i--){
@@ -198,7 +305,7 @@ int main() {
     }
 
    //deal the cards, order the cards in descending order
-
+/*
    while(myHand.size() < HAND_SIZE && opponentHand.size() < HAND_SIZE){
     if(myHand.empty()){
         myHand.push_back(shuffledDeck.top());
@@ -212,7 +319,7 @@ int main() {
         //for some reason the iterator can't be de-referenced directly,
         //but the address can be copied to a pointer and that can be de-referenced
         currCard = *it; 
-        while(it!=myHand.end() && shuffledDeck.top()->value < currCard->value){
+        while(it!=myHand.end() && shuffledDeck.top()->run_value < currCard->run_value){
             it++;
             currCard = *it; 
         }
@@ -225,7 +332,7 @@ int main() {
         //for some reason the iterator can't be de-referenced directly,
         //but the address can be copied to a pointer and that can be de-referenced
         currCard = *it; 
-        while(it!=opponentHand.end() && shuffledDeck.top()->value < currCard->value){
+        while(it!=opponentHand.end() && shuffledDeck.top()->run_value < currCard->run_value){
             it++;
             currCard = *it; 
         }
@@ -233,7 +340,7 @@ int main() {
         shuffledDeck.pop();
     }
    }
-
+*/
 
     //test print my hand
     cout << "\nmy hand: \n";
@@ -244,10 +351,12 @@ int main() {
     int numCalcs = 0;
     numCalcs = 0;
     it=myHand.begin();
-    int count = count_fifteens_trim(numCalcs,0, myHand, it);
-    cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
-
-
+    int fifteens_points = 2*count_fifteens_trim(numCalcs,0, myHand, it);
+    int pairs_points = 2*count_pairs(myHand);
+    int runs_points = count_runs(myHand);
+    cout<<"number of fifteens: "<< fifteens_points<< "\nnumber of pairs: "<<pairs_points<<"\n";
+    cout<<"number of runs: "<< runs_points<< "\ntotal points: "<<(fifteens_points+pairs_points+runs_points)<<"\n";
+    cout<<"\nNumCalcs: "<<numCalcs<<"\n";
 
     //test print opponent's hand
     cout << "opponent's hand: \n";
@@ -257,8 +366,12 @@ int main() {
     }
     numCalcs = 0;
     it=opponentHand.begin();
-    count = count_fifteens_trim(numCalcs, 0, opponentHand, it);
-    cout<<"number of fifteens: "<< count<< "\nNumCalcs: "<<numCalcs<<"\n";
+    fifteens_points = 2*count_fifteens_trim(numCalcs,0, opponentHand, it);
+    pairs_points = 2*count_pairs(opponentHand);
+    runs_points = count_runs(opponentHand);
+    cout<<"number of fifteens: "<< fifteens_points<< "\nnumber of pairs: "<<pairs_points<<"\n";
+    cout<<"number of runs: "<< runs_points<< "\ntotal points: "<<(fifteens_points+pairs_points+runs_points)<<"\n";
+    cout<<"\nNumCalcs: "<<numCalcs<<"\n";
 
     return 0;
 }
