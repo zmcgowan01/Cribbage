@@ -6,6 +6,7 @@
 #include <vector>
 #include <list>
 #include <time.h>
+
 #include "Deck.h"
 
 using namespace std;
@@ -20,6 +21,195 @@ struct Card{
     string suit;
 };
 
+class Deck {       // The class
+    public:
+        Deck();
+        void Shuffle();
+        void printDeck();
+        void assignCustomHands(list<Card*> &hand1, list<Card*> &hand2);
+        void dealHands(list<Card*> &hand1, list<Card*> &hand2);
+        void returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2);
+    private:
+        vector<Card*> myDeck, shuffledDeck, shuffledTestDeck;;
+        //stack<Card*> shuffledDeck, shuffledTestDeck;
+        int num_hands;
+        int cards_per_hand;
+};
+
+Deck::Deck(){
+    Card* currCard;
+    //using lists for the hands because they are doubly linked lists, placing
+    //cards in descending order of value reduces time complexity of counting
+    //points in the hand
+    list<Card*>::iterator it; 
+
+    //create the deck from scratch. Poof!
+    int arrayIndex;
+    for(int i =0;i<4;i++){
+        for(int j = 1;j<14; j++){
+            currCard = new Card;
+            //cout<<currCard<<"\n";
+            currCard->value = j;
+            currCard->run_value = j;
+            if(currCard->value > 10)
+                currCard->value = 10;
+            switch(j){
+                case 1:
+                    currCard->symbol = "A";
+                    break;
+                case 2:
+                    currCard->symbol = "2";
+                    break;
+                case 3:
+                    currCard->symbol = "3";
+                    break;
+                case 4:
+                    currCard->symbol = "4";
+                    break;
+                case 5:
+                    currCard->symbol = "5";
+                    break;
+                case 6:
+                    currCard->symbol = "6";
+                    break;
+                case 7:
+                    currCard->symbol = "7";
+                    break;
+                case 8:
+                    currCard->symbol = "8";
+                    break;
+                case 9:
+                    currCard->symbol = "9";
+                    break;
+                case 10:
+                    currCard->symbol = "10";
+                    break;
+                case 11:
+                    currCard->symbol = "J";
+                    break;
+                case 12:
+                    currCard->symbol = "Q";
+                    break;
+                case 13:
+                    currCard->symbol = "K";
+                    break;
+            }
+            switch(i){
+                case 0:
+                    currCard->suit = "spade";
+                    break;
+                case 1:
+                    currCard->suit = "club";
+                    break;
+                case 2:
+                    currCard->suit = "heart";
+                    break;
+                case 3:
+                    currCard->suit = "diamond";
+                    break;
+            }
+            myDeck.push_back(currCard);
+            shuffledDeck.push_back(currCard);
+        }
+    }
+    cout<<"Deck generated!\n";
+}
+
+void Deck::Shuffle(){
+    //shuffle the deck
+    myDeck = shuffledDeck;
+    shuffledDeck.clear();
+    shuffledTestDeck.clear();
+    for(int i = 52; i > 0; i--){
+        srand(time(NULL));
+        int r = rand() % i;
+        shuffledDeck.push_back(myDeck[r]);
+        shuffledTestDeck.push_back(myDeck[r]);
+        myDeck.erase(myDeck.begin() + r);
+    }
+    cout<<"Deck shuffled\n";
+}
+
+void Deck::printDeck(){
+//test print the entire deck
+    for(int i = 0; i < 52; i++){
+        cout<<shuffledTestDeck.back()->symbol<<shuffledTestDeck.back()->suit<<'\n';
+        shuffledTestDeck.pop_back();
+    }
+}
+
+void Deck::assignCustomHands(list<Card*> &hand1, list<Card*> &hand2){
+    hand1.push_back(myDeck[11]);
+    hand1.push_back(myDeck[10]);
+    hand1.push_back(myDeck[9]);
+    hand1.push_back(myDeck[9]);
+    hand1.push_back(myDeck[8]);
+
+    hand2.push_back(myDeck[3]);
+    hand2.push_back(myDeck[2]);
+    hand2.push_back(myDeck[1]);
+    hand2.push_back(myDeck[0]);
+    hand2.push_back(myDeck[0]);
+}
+
+void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
+   Card* currCard;
+   list<Card*>::iterator it;
+   while(hand1.size() < HAND_SIZE && hand2.size() < HAND_SIZE){
+    if(hand1.empty()){
+        hand1.push_back(shuffledDeck.back());
+        shuffledDeck.pop_back();
+        hand2.push_back(shuffledDeck.back());
+        shuffledDeck.pop_back();
+    }
+    else {
+        //first deal top card to my hand
+        it=hand1.begin();
+        //for some reason the iterator can't be de-referenced directly,
+        //but the address can be copied to a pointer and that can be de-referenced
+        currCard = *it; 
+        while(it!=hand1.end() && shuffledDeck.back()->run_value < currCard->run_value){
+            it++;
+            currCard = *it; 
+        }
+        hand1.insert(it, shuffledDeck.back());
+        shuffledDeck.pop_back();
+
+
+        //then deal next card to opponent hand
+        it=hand2.begin();
+        //for some reason the iterator can't be de-referenced directly,
+        //but the address can be copied to a pointer and that can be de-referenced
+        currCard = *it; 
+        while(it!=hand2.end() && shuffledDeck.back()->run_value < currCard->run_value){
+            it++;
+            currCard = *it; 
+        }
+        hand2.insert(it, shuffledDeck.back());
+        shuffledDeck.pop_back();
+    }
+   }
+}
+
+void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
+    Card* currCard;
+    list<Card*>::iterator it;
+    it = hand1.begin();
+    while(it != hand1.end()){
+        currCard = *it;
+        shuffledDeck.push_back(currCard);
+        hand1.pop_front();
+        it = hand1.begin();
+    }
+
+    it = hand2.begin();
+    while(it != hand2.end()){
+        currCard = *it;
+        shuffledDeck.push_back(currCard);
+        hand2.pop_front();
+        it = hand2.begin();
+    }
+}
 //count the number of different card combinations
 //can be added up to equal 15 (for point scoring)
 //needs to be recursive
@@ -186,194 +376,52 @@ int count_runs(list<Card*> hand){
     return count;
 }
 
-
-void assignCustomHands(list<Card*> &hand1, list<Card*> &hand2,vector<Card*> &deck){
-    hand1.push_back(deck[11]);
-    hand1.push_back(deck[10]);
-    hand1.push_back(deck[9]);
-    hand1.push_back(deck[9]);
-    hand1.push_back(deck[8]);
-
-    hand2.push_back(deck[3]);
-    hand2.push_back(deck[2]);
-    hand2.push_back(deck[1]);
-    hand2.push_back(deck[0]);
-    hand2.push_back(deck[0]);
-}
-
 int main() {
-    // Write C++ code here
-    
+    Deck deck;
     Card* currCard;
-    vector<Card*> myDeck, testDeck;
-    stack<Card*> shuffledDeck, shuffledTestDeck;
-    //using lists for the hands because they are doubly linked lists, placing
-    //cards in descending order of value reduces time complexity of counting
-    //points in the hand
     list<Card*> myHand, opponentHand;
-    list<Card*>::iterator it; 
+    list<Card*>::iterator it;
 
-    //create the deck from scratch. Poof!
-    int arrayIndex;
-    for(int i =0;i<4;i++){
-        for(int j = 1;j<14; j++){
-            currCard = new Card;
-            //cout<<currCard<<"\n";
-            currCard->value = j;
-            currCard->run_value = j;
-            if(currCard->value > 10)
-                currCard->value = 10;
-            switch(j){
-                case 1:
-                    currCard->symbol = "A";
-                    break;
-                case 2:
-                    currCard->symbol = "2";
-                    break;
-                case 3:
-                    currCard->symbol = "3";
-                    break;
-                case 4:
-                    currCard->symbol = "4";
-                    break;
-                case 5:
-                    currCard->symbol = "5";
-                    break;
-                case 6:
-                    currCard->symbol = "6";
-                    break;
-                case 7:
-                    currCard->symbol = "7";
-                    break;
-                case 8:
-                    currCard->symbol = "8";
-                    break;
-                case 9:
-                    currCard->symbol = "9";
-                    break;
-                case 10:
-                    currCard->symbol = "10";
-                    break;
-                case 11:
-                    currCard->symbol = "J";
-                    break;
-                case 12:
-                    currCard->symbol = "Q";
-                    break;
-                case 13:
-                    currCard->symbol = "K";
-                    break;
-            }
-            switch(i){
-                case 0:
-                    currCard->suit = "spade";
-                    break;
-                case 1:
-                    currCard->suit = "club";
-                    break;
-                case 2:
-                    currCard->suit = "heart";
-                    break;
-                case 3:
-                    currCard->suit = "diamond";
-                    break;
-            }
-            myDeck.push_back(currCard);
-            testDeck.push_back(currCard);
-            //cout<<arrayIndex<<'\n';
-        }
-    }
-    cout<<"Deck generated!\n";
-    
     //assign specific cards to hands for unit testing
-    assignCustomHands(myHand, opponentHand, testDeck);
+    //deck.assignCustomHands(myHand, opponentHand);
 
-    //shuffle the deck
-    for(int i = 52; i > 0; i--){
-        srand(time(NULL));
-        int r = rand() % i;
-        shuffledDeck.push(myDeck[r]);
-        shuffledTestDeck.push(myDeck[r]);
-        //cout<<myDeck[r]->symbol<<"  "<<myDeck[r]->suit<<'\n';
-        myDeck.erase(myDeck.begin() + r);
-    }
-
-    cout<<"Deck shuffled\n";
+    deck.Shuffle();
     
-    //test print the entire deck
-    for(int i = 0; i < 52; i++){
-        cout<<shuffledTestDeck.top()->symbol<<shuffledTestDeck.top()->suit<<'\n';
-        shuffledTestDeck.pop();
-    }
+    //deck.printDeck();
 
-   //deal the cards, order the cards in descending order
-/*
-   while(myHand.size() < HAND_SIZE && opponentHand.size() < HAND_SIZE){
-    if(myHand.empty()){
-        myHand.push_back(shuffledDeck.top());
-        shuffledDeck.pop();
-        opponentHand.push_back(shuffledDeck.top());
-        shuffledDeck.pop();
-    }
-    else {
-        //first deal top card to my hand
-        it=myHand.begin();
-        //for some reason the iterator can't be de-referenced directly,
-        //but the address can be copied to a pointer and that can be de-referenced
-        currCard = *it; 
-        while(it!=myHand.end() && shuffledDeck.top()->run_value < currCard->run_value){
-            it++;
-            currCard = *it; 
-        }
-        myHand.insert(it, shuffledDeck.top());
-        shuffledDeck.pop();
+    //deal the cards, order the cards in descending order
+    deck.dealHands(myHand, opponentHand);
 
+    
 
-        //then deal next card to opponent hand
-        it=opponentHand.begin();
-        //for some reason the iterator can't be de-referenced directly,
-        //but the address can be copied to a pointer and that can be de-referenced
-        currCard = *it; 
-        while(it!=opponentHand.end() && shuffledDeck.top()->run_value < currCard->run_value){
-            it++;
-            currCard = *it; 
-        }
-        opponentHand.insert(it, shuffledDeck.top());
-        shuffledDeck.pop();
-    }
-   }
-*/
-
-    //test print my hand
-    cout << "\nmy hand: \n";
-    for (it=myHand.begin(); it!=myHand.end(); ++it){
-        currCard = *it;
-        cout<<currCard->symbol<<currCard->suit<<'\n';
-    }
     int numCalcs = 0;
-    numCalcs = 0;
-    it=myHand.begin();
-    int fifteens_points = 2*count_fifteens_trim(numCalcs,0, myHand, it);
-    int pairs_points = 2*count_pairs(myHand);
-    int runs_points = count_runs(myHand);
-    cout<<"number of fifteens: "<< fifteens_points<< "\nnumber of pairs: "<<pairs_points<<"\n";
-    cout<<"number of runs: "<< runs_points<< "\ntotal points: "<<(fifteens_points+pairs_points+runs_points)<<"\n";
-    cout<<"\nNumCalcs: "<<numCalcs<<"\n";
+    int total_points = 0;
+    for(int i = 0; i < 10; i++){
+        //test print my hand
+        cout << "\nmy hand: \n";
+        for (it=myHand.begin(); it!=myHand.end(); ++it){
+            currCard = *it;
+            cout<<currCard->symbol<<currCard->suit<<'\n';
+        }
+        numCalcs = 0;
+        it=myHand.begin();
+        total_points = 2*count_fifteens_trim(numCalcs,0, myHand, it) + 2*count_pairs(myHand) + count_runs(myHand);
+        cout<<"\ntotal points: "<<total_points<<"\n";
 
-    //test print opponent's hand
-    cout << "opponent's hand: \n";
-    for (it=opponentHand.begin(); it!=opponentHand.end(); ++it){
-        currCard = *it;
-        cout<<currCard->symbol<<currCard->suit<<'\n';
+        //test print opponent's hand
+        cout << "opponent's hand: \n";
+        for (it=opponentHand.begin(); it!=opponentHand.end(); ++it){
+            currCard = *it;
+            cout<<currCard->symbol<<currCard->suit<<'\n';
+        }
+        numCalcs = 0;
+        it=opponentHand.begin();
+        total_points = 2*count_fifteens_trim(numCalcs,0, opponentHand, it) + 2*count_pairs(opponentHand) + count_runs(opponentHand);
+        cout<<"\ntotal points: "<<total_points<<"\n";
+    
+        deck.returnCardsToDeck(myHand, opponentHand);
+        deck.Shuffle();
+        deck.dealHands(myHand, opponentHand);
     }
-    numCalcs = 0;
-    it=opponentHand.begin();
-    fifteens_points = 2*count_fifteens_trim(numCalcs,0, opponentHand, it);
-    pairs_points = 2*count_pairs(opponentHand);
-    runs_points = count_runs(opponentHand);
-    cout<<"number of fifteens: "<< fifteens_points<< "\nnumber of pairs: "<<pairs_points<<"\n";
-    cout<<"number of runs: "<< runs_points<< "\ntotal points: "<<(fifteens_points+pairs_points+runs_points)<<"\n";
-    cout<<"\nNumCalcs: "<<numCalcs<<"\n";
-
     return 0;
 }
