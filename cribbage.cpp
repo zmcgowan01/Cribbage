@@ -6,7 +6,6 @@
 #include <vector>
 #include <list>
 #include <time.h>
-
 #include "Deck.h"
 
 using namespace std;
@@ -381,7 +380,7 @@ int main() {
     Card* currCard;
     list<Card*> myHand, opponentHand;
     list<Card*>::iterator it;
-
+    clock_t start, end; 
     //assign specific cards to hands for unit testing
     //deck.assignCustomHands(myHand, opponentHand);
 
@@ -396,7 +395,9 @@ int main() {
 
     int numCalcs = 0;
     int total_points = 0;
-    for(int i = 0; i < 10; i++){
+    float time_complexity = 0.0; //ns
+
+    for(int i = 0; i < 100; i++){
         //test print my hand
         cout << "\nmy hand: \n";
         for (it=myHand.begin(); it!=myHand.end(); ++it){
@@ -405,8 +406,11 @@ int main() {
         }
         numCalcs = 0;
         it=myHand.begin();
+        start = clock();
         total_points = 2*count_fifteens_trim(numCalcs,0, myHand, it) + 2*count_pairs(myHand) + count_runs(myHand);
-        cout<<"\ntotal points: "<<total_points<<"\n";
+        end = clock();
+        time_complexity += ((float)end-(float)start);
+        cout<<"total points: "<<total_points<<"\n\n";
 
         //test print opponent's hand
         cout << "opponent's hand: \n";
@@ -416,12 +420,17 @@ int main() {
         }
         numCalcs = 0;
         it=opponentHand.begin();
+        start = clock();
         total_points = 2*count_fifteens_trim(numCalcs,0, opponentHand, it) + 2*count_pairs(opponentHand) + count_runs(opponentHand);
-        cout<<"\ntotal points: "<<total_points<<"\n";
+        end = clock();
+        time_complexity += ((float)end-(float)start);
+        cout<<"total points: "<<total_points<<"\n\n";
     
         deck.returnCardsToDeck(myHand, opponentHand);
         deck.Shuffle();
         deck.dealHands(myHand, opponentHand);
     }
+    time_complexity = time_complexity / 200.0;
+    cout<<"Average time of each search in ns: "<<time_complexity<<"\n";
     return 0;
 }
