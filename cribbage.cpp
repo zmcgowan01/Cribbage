@@ -11,7 +11,7 @@
 using namespace std;
 
 
-const int HAND_SIZE = 5;
+const int HAND_SIZE = 6;
 
 struct Card{
     int value;
@@ -209,6 +209,17 @@ void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
         it = hand2.begin();
     }
 }
+
+void print_hand(list<Card*> hand){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    for (it=hand.begin(); it!=hand.end(); ++it){
+        currCard = *it;
+        cout<<currCard->symbol<<currCard->suit<<'\n';
+    }
+    cout<<'\n';
+}
+
 //count the number of different card combinations
 //can be added up to equal 15 (for point scoring)
 //needs to be recursive
@@ -375,10 +386,101 @@ int count_runs(list<Card*> hand){
     return count;
 }
 
+void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    clock_t start, end; 
+    int numCalcs = 0;
+    int total_points = 0;
+    float time_complexity = 0.0; //ns
+
+    for(int i = 0; i < 100; i++){
+        //test print my hand
+        cout << "\nmy hand: \n";
+        print_hand(hand2);
+
+        numCalcs = 0;
+        it=hand1.begin();
+        start = clock();
+        total_points = 2*count_fifteens_trim(numCalcs,0, hand1, it) + 2*count_pairs(hand1) + count_runs(hand1);
+        end = clock();
+        time_complexity += ((float)end-(float)start);
+        cout<<"total points: "<<total_points<<"\n\n";
+
+        //test print opponent's hand
+        cout << "opponent's hand: \n";
+        print_hand(hand2);
+
+        numCalcs = 0;
+        it=hand2.begin();
+        start = clock();
+        total_points = 2*count_fifteens_trim(numCalcs,0, hand2, it) + 2*count_pairs(hand2) + count_runs(hand2);
+        end = clock();
+        time_complexity += ((float)end-(float)start);
+        cout<<"total points: "<<total_points<<"\n\n";
+    
+        deck->returnCardsToDeck(hand1, hand2);
+        deck->Shuffle();
+        deck->dealHands(hand1, hand2);
+    }
+    time_complexity = time_complexity / 200.0;
+    cout<<"Average time of each search in ns: "<<time_complexity<<"\n";
+}
+
+
+void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
+    optimal_hand->clear();
+    discard->clear();
+
+    int factorial_iterator =   HAND_SIZE - 1;
+    list<Card*>::iterator it;
+    it = hand.begin();
+    while(it != hand.end()){
+        optimal_hand->push_back(*it);
+        it++;
+    }
+
+    optimal_hand = &hand;
+    discard->push_back(optimal_hand->front());
+    optimal_hand->pop_front();
+    discard->push_back(optimal_hand->front());
+    optimal_hand->pop_front();
+    for(int i=0; i<(HAND_SIZE-1); i++){
+        print_hand(*discard);
+        for(int j=0; j<(factorial_iterator-1); j++){
+            //this is where we would calculate the scoring potential
+            //of each combination
+            optimal_hand->push_back(discard->back());
+            discard->pop_back();
+            discard->push_back(optimal_hand->front());
+            optimal_hand->pop_front();
+            print_hand(*discard);
+        }
+        optimal_hand->push_back(discard->back());
+        discard->pop_back();
+
+        for(int k = 0; k < (HAND_SIZE - 1 - factorial_iterator); k++){
+            optimal_hand->push_back(optimal_hand->front());
+            optimal_hand->pop_front();
+        }
+
+        optimal_hand->push_back(discard->back());
+        discard->pop_back();
+
+        discard->push_back(optimal_hand->front());
+        optimal_hand->pop_front();
+        discard->push_back(optimal_hand->front());
+        optimal_hand->pop_front();
+
+        factorial_iterator--;
+    }
+    
+}
+
 int main() {
     Deck deck;
     Card* currCard;
-    list<Card*> myHand, opponentHand;
+    list<Card*> myHand, opponentHand, discard, optimal_hand;
     list<Card*>::iterator it;
     clock_t start, end; 
     //assign specific cards to hands for unit testing
@@ -391,46 +493,11 @@ int main() {
     //deal the cards, order the cards in descending order
     deck.dealHands(myHand, opponentHand);
 
-    
+    //count_points_benchmark(&deck, myHand, opponentHand);
 
-    int numCalcs = 0;
-    int total_points = 0;
-    float time_complexity = 0.0; //ns
+    print_hand(myHand);
 
-    for(int i = 0; i < 100; i++){
-        //test print my hand
-        cout << "\nmy hand: \n";
-        for (it=myHand.begin(); it!=myHand.end(); ++it){
-            currCard = *it;
-            cout<<currCard->symbol<<currCard->suit<<'\n';
-        }
-        numCalcs = 0;
-        it=myHand.begin();
-        start = clock();
-        total_points = 2*count_fifteens_trim(numCalcs,0, myHand, it) + 2*count_pairs(myHand) + count_runs(myHand);
-        end = clock();
-        time_complexity += ((float)end-(float)start);
-        cout<<"total points: "<<total_points<<"\n\n";
+    choose_optimal_hand(myHand,&optimal_hand, &discard);
 
-        //test print opponent's hand
-        cout << "opponent's hand: \n";
-        for (it=opponentHand.begin(); it!=opponentHand.end(); ++it){
-            currCard = *it;
-            cout<<currCard->symbol<<currCard->suit<<'\n';
-        }
-        numCalcs = 0;
-        it=opponentHand.begin();
-        start = clock();
-        total_points = 2*count_fifteens_trim(numCalcs,0, opponentHand, it) + 2*count_pairs(opponentHand) + count_runs(opponentHand);
-        end = clock();
-        time_complexity += ((float)end-(float)start);
-        cout<<"total points: "<<total_points<<"\n\n";
-    
-        deck.returnCardsToDeck(myHand, opponentHand);
-        deck.Shuffle();
-        deck.dealHands(myHand, opponentHand);
-    }
-    time_complexity = time_complexity / 200.0;
-    cout<<"Average time of each search in ns: "<<time_complexity<<"\n";
     return 0;
 }
