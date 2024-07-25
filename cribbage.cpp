@@ -35,6 +35,52 @@ class Deck {       // The class
         int cards_per_hand;
 };
 
+/*char* assign_card_symbol(int card_val){
+    char* symb;
+    switch(card_val){
+                case 1:
+                    symb = "A";
+                    break;
+                case 2:
+                    symb = "2";
+                    break;
+                case 3:
+                    symb = "3";
+                    break;
+                case 4:
+                    symb = "4";
+                    break;
+                case 5:
+                    symb = "5";
+                    break;
+                case 6:
+                    symb = "6";
+                    break;
+                case 7:
+                    symb = "7";
+                    break;
+                case 8:
+                    symb = "8";
+                    break;
+                case 9:
+                    symb = "9";
+                    break;
+                case 10:
+                    symb = "10";
+                    break;
+                case 11:
+                    symb = "J";
+                    break;
+                case 12:
+                    symb = "Q";
+                    break;
+                case 13:
+                    symb = "K";
+                    break;
+            }
+            return symb;
+}*/
+
 Deck::Deck(){
     Card* currCard;
     //using lists for the hands because they are doubly linked lists, placing
@@ -245,9 +291,9 @@ bool is_hand_sorted(list<Card*> hand){
 }*/
 
 // comparison function for sorting list of type *Card
-bool compare_cardvalue (const Card first, const Card second)
+bool compare_cardvalue (const Card *first, const Card *second)
 {
-    if(first.run_value >= second.run_value)
+    if(first->run_value >= second->run_value)
         return true;
     else
         return false;
@@ -460,12 +506,82 @@ void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
     cout<<"Average time of each search in ns: "<<time_complexity<<"\n";
 }
 
+float calculate_weighted_hand_value(list<Card*> hand){
+    Card* currCard;
+    currCard = new Card;
+    list<Card*>::iterator it;
+    int numCalcs = 0;
+    float weighted_value = 0.0;
+    int cumulative_score = 0;
+    for(int i = 1; i <=13; i++){
+        currCard->value = i;
+        currCard->run_value = i;
+        if(currCard->value > 10)
+            currCard->value = 10;
+        switch(i){
+            case 1:
+                currCard->symbol = "A";
+                break;
+            case 2:
+                currCard->symbol = "2";
+                break;
+            case 3:
+                currCard->symbol = "3";
+                break;
+            case 4:
+                currCard->symbol = "4";
+                break;
+            case 5:
+                currCard->symbol = "5";
+                break;
+            case 6:
+                currCard->symbol = "6";
+                break;
+            case 7:
+                currCard->symbol = "7";
+                break;
+            case 8:
+                currCard->symbol = "8";
+                break;
+            case 9:
+                currCard->symbol = "9";
+                break;
+            case 10:
+                currCard->symbol = "10";
+                break;
+            case 11:
+                currCard->symbol = "J";
+                break;
+            case 12:
+                currCard->symbol = "Q";
+                break;
+            case 13:
+                currCard->symbol = "K";
+                break;
+        }
+        hand.push_back(currCard);
+        hand.sort(compare_cardvalue);
+        //print_hand(hand);
+        it = hand.begin();
+        cumulative_score += 2*count_fifteens_trim(numCalcs,0, hand, it) + 2*count_pairs(hand) + count_runs(hand);
+        it = hand.begin();
+        while(it != hand.end()){
+            currCard = *it;
+            if(currCard->suit.empty())
+                break;
+            it++;
+        }
+        hand.remove(currCard);
+    }
+
+    weighted_value = (float)cumulative_score / 13.0;
+
+    return weighted_value;
+}
 
 void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
     list<Card*> discard_stage, optimal_hand_stage;
-    
-    optimal_hand->clear();
-    discard->clear();
+    float highest_score = 0.0, current_score = 0.0;
 
     int factorial_iterator =   HAND_SIZE - 1;
     list<Card*>::iterator it;
@@ -480,7 +596,24 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     discard_stage.push_back(optimal_hand_stage.front());
     optimal_hand_stage.pop_front();
     for(int i=0; i<(HAND_SIZE-1); i++){
-        print_hand(discard_stage);
+        current_score = calculate_weighted_hand_value(optimal_hand_stage);
+        if(current_score > highest_score){
+            highest_score = current_score;
+            optimal_hand->clear();
+            discard->clear();
+            it = optimal_hand_stage.begin();
+            while(it != optimal_hand_stage.end()){
+                optimal_hand->push_back(*it);
+                it++;
+            }
+
+            it = discard_stage.begin();
+            while(it != discard_stage.end()){
+               discard->push_back(*it);
+                it++;
+            }
+        }
+        //print_hand(discard_stage);
         for(int j=0; j<(factorial_iterator-1); j++){
             //this is where we would calculate the scoring potential
             //of each combination
@@ -488,7 +621,24 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
             discard_stage.pop_back();
             discard_stage.push_back(optimal_hand_stage.front());
             optimal_hand_stage.pop_front();
-            print_hand(discard_stage);
+            current_score = calculate_weighted_hand_value(optimal_hand_stage);
+            if(current_score > highest_score){
+                highest_score = current_score;
+                optimal_hand->clear();
+                discard->clear();
+                it = optimal_hand_stage.begin();
+                while(it != optimal_hand_stage.end()){
+                    optimal_hand->push_back(*it);
+                    it++;
+                }
+
+                it = discard_stage.begin();
+                while(it != discard_stage.end()){
+                    discard->push_back(*it);
+                    it++;
+                }
+            }
+            //print_hand(discard_stage);
         }
         optimal_hand_stage.push_back(discard_stage.back());
         discard_stage.pop_back();
@@ -509,7 +659,7 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
         factorial_iterator--;
     }
 
-    it = optimal_hand_stage.begin();
+    /*it = optimal_hand_stage.begin();
     while(it != optimal_hand_stage.end()){
         optimal_hand->push_back(*it);
         it++;
@@ -519,7 +669,7 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     while(it != discard_stage.end()){
         discard->push_back(*it);
         it++;
-    }
+    }*/
     
 }
 
@@ -544,6 +694,12 @@ int main() {
     print_hand(myHand);
 
     choose_optimal_hand(myHand,&optimal_hand, &discard);
+
+    cout<<"Optimal hand: \n";
+    print_hand(optimal_hand);
+
+    cout<<"Discard cards: \n";
+    print_hand(discard);
 
     return 0;
 }
