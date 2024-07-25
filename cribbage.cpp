@@ -29,7 +29,7 @@ class Deck {       // The class
         void dealHands(list<Card*> &hand1, list<Card*> &hand2);
         void returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2);
     private:
-        vector<Card*> myDeck, shuffledDeck, shuffledTestDeck;;
+        vector<Card*> myDeck, shuffledDeck, shuffledTestDeck;
         //stack<Card*> shuffledDeck, shuffledTestDeck;
         int num_hands;
         int cards_per_hand;
@@ -218,6 +218,39 @@ void print_hand(list<Card*> hand){
         cout<<currCard->symbol<<currCard->suit<<'\n';
     }
     cout<<'\n';
+}
+
+bool is_hand_sorted(list<Card*> hand){
+    int prev_val = 15;  //arbitrary # larger than largest card value
+    Card* currCard;    
+    list<Card*>::iterator it;
+    for (it=hand.begin(); it!=hand.end(); ++it){
+        currCard = *it;
+        if(currCard->run_value > prev_val);
+            return false;
+    }
+    return true;
+}
+
+/*void sort_hand(list<Card*> hand){
+    int prev_val = 15;  //arbitrary # larger than largest card value
+    Card* currCard;    
+    list<Card*>::iterator it;
+    for (it=hand.begin(); it!=hand.end(); ++it){
+        currCard = *it;
+        if(currCard->run_value > prev_val);
+            return false;
+    }
+    return true;
+}*/
+
+// comparison function for sorting list of type *Card
+bool compare_cardvalue (const Card first, const Card second)
+{
+    if(first.run_value >= second.run_value)
+        return true;
+    else
+        return false;
 }
 
 //count the number of different card combinations
@@ -429,6 +462,8 @@ void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
 
 
 void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
+    list<Card*> discard_stage, optimal_hand_stage;
+    
     optimal_hand->clear();
     discard->clear();
 
@@ -436,43 +471,54 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     list<Card*>::iterator it;
     it = hand.begin();
     while(it != hand.end()){
+        optimal_hand_stage.push_back(*it);
+        it++;
+    }
+
+    discard_stage.push_back(optimal_hand_stage.front());
+    optimal_hand_stage.pop_front();
+    discard_stage.push_back(optimal_hand_stage.front());
+    optimal_hand_stage.pop_front();
+    for(int i=0; i<(HAND_SIZE-1); i++){
+        print_hand(discard_stage);
+        for(int j=0; j<(factorial_iterator-1); j++){
+            //this is where we would calculate the scoring potential
+            //of each combination
+            optimal_hand_stage.push_back(discard_stage.back());
+            discard_stage.pop_back();
+            discard_stage.push_back(optimal_hand_stage.front());
+            optimal_hand_stage.pop_front();
+            print_hand(discard_stage);
+        }
+        optimal_hand_stage.push_back(discard_stage.back());
+        discard_stage.pop_back();
+
+        for(int k = 0; k < (HAND_SIZE - 1 - factorial_iterator); k++){
+            optimal_hand_stage.push_back(optimal_hand_stage.front());
+            optimal_hand_stage.pop_front();
+        }
+
+        optimal_hand_stage.push_back(discard_stage.back());
+        discard_stage.pop_back();
+
+        discard_stage.push_back(optimal_hand_stage.front());
+        optimal_hand_stage.pop_front();
+        discard_stage.push_back(optimal_hand_stage.front());
+        optimal_hand_stage.pop_front();
+
+        factorial_iterator--;
+    }
+
+    it = optimal_hand_stage.begin();
+    while(it != optimal_hand_stage.end()){
         optimal_hand->push_back(*it);
         it++;
     }
 
-    optimal_hand = &hand;
-    discard->push_back(optimal_hand->front());
-    optimal_hand->pop_front();
-    discard->push_back(optimal_hand->front());
-    optimal_hand->pop_front();
-    for(int i=0; i<(HAND_SIZE-1); i++){
-        print_hand(*discard);
-        for(int j=0; j<(factorial_iterator-1); j++){
-            //this is where we would calculate the scoring potential
-            //of each combination
-            optimal_hand->push_back(discard->back());
-            discard->pop_back();
-            discard->push_back(optimal_hand->front());
-            optimal_hand->pop_front();
-            print_hand(*discard);
-        }
-        optimal_hand->push_back(discard->back());
-        discard->pop_back();
-
-        for(int k = 0; k < (HAND_SIZE - 1 - factorial_iterator); k++){
-            optimal_hand->push_back(optimal_hand->front());
-            optimal_hand->pop_front();
-        }
-
-        optimal_hand->push_back(discard->back());
-        discard->pop_back();
-
-        discard->push_back(optimal_hand->front());
-        optimal_hand->pop_front();
-        discard->push_back(optimal_hand->front());
-        optimal_hand->pop_front();
-
-        factorial_iterator--;
+    it = discard_stage.begin();
+    while(it != discard_stage.end()){
+        discard->push_back(*it);
+        it++;
     }
     
 }
