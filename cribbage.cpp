@@ -18,6 +18,7 @@ struct Card{
     int run_value;
     string symbol;
     string suit;
+    int i_suit;   //for easier processing
 };
 
 class Deck {       // The class
@@ -142,15 +143,19 @@ Deck::Deck(){
             switch(i){
                 case 0:
                     currCard->suit = "spade";
+                    currCard->i_suit = 0;
                     break;
                 case 1:
                     currCard->suit = "club";
+                    currCard->i_suit = 1;
                     break;
                 case 2:
                     currCard->suit = "heart";
+                    currCard->i_suit = 2;
                     break;
                 case 3:
                     currCard->suit = "diamond";
+                    currCard->i_suit = 3;
                     break;
             }
             myDeck.push_back(currCard);
@@ -465,6 +470,20 @@ int count_runs(list<Card*> hand){
     return count;
 }
 
+int count_cards_of_suit(list<Card*> hand, int suit){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    int suit_count = 0;
+    it = hand.begin();
+    while(it != hand.end()){
+        currCard = *it;
+        if(currCard->i_suit == suit)
+            suit_count++;
+        it++;
+    }
+    return suit_count;
+}
+
 void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
     Card* currCard;    
     list<Card*>::iterator it;
@@ -582,6 +601,16 @@ float calculate_weighted_hand_value(list<Card*> hand){
 void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
     list<Card*> discard_stage, optimal_hand_stage;
     float highest_score = 0.0, current_score = 0.0;
+    int suit_count = 0, suit = -1;
+
+    //trimming effort, check if there is a flush possibility
+    for(int i=0; i < 4; i++){
+        suit_count = count_cards_of_suit(hand, i);
+        if(suit_count >= 4){
+            suit = i;
+            break;
+        }
+    }
 
     int factorial_iterator =   HAND_SIZE - 1;
     list<Card*>::iterator it;
@@ -597,6 +626,10 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     optimal_hand_stage.pop_front();
     for(int i=0; i<(HAND_SIZE-1); i++){
         current_score = calculate_weighted_hand_value(optimal_hand_stage);
+        if(suit!=-1){
+            if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
+                current_score += 4 + ((13-suit_count) / 52);
+        }
         if(current_score > highest_score){
             highest_score = current_score;
             optimal_hand->clear();
@@ -622,6 +655,10 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
             discard_stage.push_back(optimal_hand_stage.front());
             optimal_hand_stage.pop_front();
             current_score = calculate_weighted_hand_value(optimal_hand_stage);
+            if(suit!=-1){
+                if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
+                    current_score += 4 + ((13-suit_count) / 52);
+            }
             if(current_score > highest_score){
                 highest_score = current_score;
                 optimal_hand->clear();
@@ -658,18 +695,6 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
 
         factorial_iterator--;
     }
-
-    /*it = optimal_hand_stage.begin();
-    while(it != optimal_hand_stage.end()){
-        optimal_hand->push_back(*it);
-        it++;
-    }
-
-    it = discard_stage.begin();
-    while(it != discard_stage.end()){
-        discard->push_back(*it);
-        it++;
-    }*/
     
 }
 
