@@ -1,4 +1,5 @@
 // Online C++ compiler to run C++ program online
+#include <fstream>
 #include <iostream>
 #include <cstdlib>
 #include <stack>
@@ -30,57 +31,12 @@ class Deck {       // The class
         void dealHands(list<Card*> &hand1, list<Card*> &hand2);
         void returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2);
     private:
-        vector<Card*> myDeck, shuffledDeck, shuffledTestDeck;
+        vector<Card*> myDeck, myDeckCustomHand, shuffledDeck, shuffledTestDeck;
         //stack<Card*> shuffledDeck, shuffledTestDeck;
         int num_hands;
         int cards_per_hand;
 };
 
-/*char* assign_card_symbol(int card_val){
-    char* symb;
-    switch(card_val){
-                case 1:
-                    symb = "A";
-                    break;
-                case 2:
-                    symb = "2";
-                    break;
-                case 3:
-                    symb = "3";
-                    break;
-                case 4:
-                    symb = "4";
-                    break;
-                case 5:
-                    symb = "5";
-                    break;
-                case 6:
-                    symb = "6";
-                    break;
-                case 7:
-                    symb = "7";
-                    break;
-                case 8:
-                    symb = "8";
-                    break;
-                case 9:
-                    symb = "9";
-                    break;
-                case 10:
-                    symb = "10";
-                    break;
-                case 11:
-                    symb = "J";
-                    break;
-                case 12:
-                    symb = "Q";
-                    break;
-                case 13:
-                    symb = "K";
-                    break;
-            }
-            return symb;
-}*/
 
 Deck::Deck(){
     Card* currCard;
@@ -159,6 +115,7 @@ Deck::Deck(){
                     break;
             }
             myDeck.push_back(currCard);
+            myDeckCustomHand.push_back(currCard); //keep this one in chronological order for custom hand making
             shuffledDeck.push_back(currCard);
         }
     }
@@ -189,17 +146,17 @@ void Deck::printDeck(){
 }
 
 void Deck::assignCustomHands(list<Card*> &hand1, list<Card*> &hand2){
-    hand1.push_back(myDeck[11]);
-    hand1.push_back(myDeck[10]);
-    hand1.push_back(myDeck[9]);
-    hand1.push_back(myDeck[9]);
-    hand1.push_back(myDeck[8]);
+    hand1.push_back(myDeckCustomHand[11]);
+    hand1.push_back(myDeckCustomHand[10]);
+    hand1.push_back(myDeckCustomHand[9]);
+    hand1.push_back(myDeckCustomHand[9]);
+    hand1.push_back(myDeckCustomHand[8]);
 
-    hand2.push_back(myDeck[3]);
-    hand2.push_back(myDeck[2]);
-    hand2.push_back(myDeck[1]);
-    hand2.push_back(myDeck[0]);
-    hand2.push_back(myDeck[0]);
+    hand2.push_back(myDeckCustomHand[3]);
+    hand2.push_back(myDeckCustomHand[2]);
+    hand2.push_back(myDeckCustomHand[1]);
+    hand2.push_back(myDeckCustomHand[0]);
+    hand2.push_back(myDeckCustomHand[0]);
 }
 
 void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
@@ -282,18 +239,6 @@ bool is_hand_sorted(list<Card*> hand){
     }
     return true;
 }
-
-/*void sort_hand(list<Card*> hand){
-    int prev_val = 15;  //arbitrary # larger than largest card value
-    Card* currCard;    
-    list<Card*>::iterator it;
-    for (it=hand.begin(); it!=hand.end(); ++it){
-        currCard = *it;
-        if(currCard->run_value > prev_val);
-            return false;
-    }
-    return true;
-}*/
 
 // comparison function for sorting list of type *Card
 bool compare_cardvalue (const Card *first, const Card *second)
@@ -380,7 +325,7 @@ int count_pairs(list<Card*> &hand){
         it2=it1;
         for (it2++; it2!=hand.end(); it2++){
             currCard2 = *it2;
-            if(currCard1->symbol == currCard2->symbol)
+            if(currCard1->run_value == currCard2->run_value)
                 count++;
             else
                 break;
@@ -482,6 +427,45 @@ int count_cards_of_suit(list<Card*> hand, int suit){
         it++;
     }
     return suit_count;
+}
+
+int count_cards_by_symbol(list<Card*> hand, int card_val){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    int card_count = 0;
+    it = hand.begin();
+    while(it != hand.end()){
+        currCard = *it;
+        if(currCard->run_value == card_val)
+            card_count++;
+        it++;
+    }
+    return card_count;
+}
+
+float count_weighted_points_nobs(list<Card*> hand,list<Card*> discard_hand){
+    Card* currCard;    
+    list<Card*>::iterator it1;
+    list<int>::iterator it2;
+    list<int> jack_suits;
+    int currSuit = 0;
+    float weighted_nobs_score = 0.0;
+    it1 = hand.begin();
+    if(count_cards_by_symbol(hand, 11) > 0){
+        while(it1 != hand.end()){
+            currCard = *it1;
+            if(currCard->run_value == 11)
+                jack_suits.push_front(currCard->i_suit);
+            it1++;
+        }
+        it2 = jack_suits.begin();
+        while(it2 != jack_suits.end()){
+            currSuit = *it2;
+            weighted_nobs_score += (13.0 - (float) count_cards_of_suit(hand, currSuit) - (float) count_cards_of_suit(discard_hand, currSuit))/46.0;
+            it2++;
+        }
+    }
+    return weighted_nobs_score;
 }
 
 void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
@@ -626,6 +610,7 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     optimal_hand_stage.pop_front();
     for(int i=0; i<(HAND_SIZE-1); i++){
         current_score = calculate_weighted_hand_value(optimal_hand_stage);
+        current_score += count_weighted_points_nobs(optimal_hand_stage, discard_stage);
         if(suit!=-1){
             if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
                 current_score += 4 + ((13-suit_count) / 52);
@@ -655,6 +640,7 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
             discard_stage.push_back(optimal_hand_stage.front());
             optimal_hand_stage.pop_front();
             current_score = calculate_weighted_hand_value(optimal_hand_stage);
+            current_score += count_weighted_points_nobs(optimal_hand_stage, discard_stage);
             if(suit!=-1){
                 if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
                     current_score += 4 + ((13-suit_count) / 52);
@@ -698,6 +684,106 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     
 }
 
+//Ignore flushes, because the possibility of a flush is so low for the crib
+//create all combinations of 5 cards that exist, minus the case where all
+//5 cards match because it doesn't exist (13^5 - 13)
+//We are interested in weighting the scoring potential of 13^2 = 169
+//different discard combinations, so print in CSV format the first two
+//cards in the combo followed by the weighting score of all 13^3 = 2197
+//combos of the other 3 cards (opponents discarded cards and cut card)
+void calculate_discard_lookup_table(void){
+    
+    Card* currCard;
+    list<Card*> hand, sorted_hand;
+    list<Card*>::iterator it; 
+    int prev_value = 0; //for checking for impossible situations to skip
+    int numCalcs = 0;
+    float weighted_score = 0.0, fifteens = 0.0, pairs = 0.0, runs = 0.0, nobs = 0.0;
+
+    const float NUM_COMBOS = 2196.0; 13^3 - 1;
+    //create the cards and hand array
+
+    ofstream myFile("crib_lookup.csv");
+    for(int i =0;i<5;i++){
+            currCard = new Card;
+            hand.push_back(currCard);
+    }
+
+    
+    for(int a=1; a <=13; a++){
+        it = hand.begin();
+        currCard = *it;
+        currCard->value = a;
+        currCard->run_value = a;
+        if(a > 10)
+            currCard->value = 10;
+        
+        for(int b=1; b <=13; b++){
+            it = hand.begin();
+            it++;
+            currCard = *it;
+            currCard->value = b;
+            currCard->run_value = b;
+            if(b > 10)
+                currCard->value = 10;            
+            weighted_score = 0.0;
+            
+            for(int c=1; c <=13; c++){
+                it = hand.begin();
+                it++; it++;
+                currCard = *it;
+                currCard->value = c;
+                currCard->run_value = c;
+                if(c > 10)
+                    currCard->value = 10;
+                
+                for(int d=1; d <=13; d++){
+                    it = hand.begin();
+                    it++; it++; it++;
+                    currCard = *it;
+                    currCard->value = d;
+                    currCard->run_value = d;
+                    if(d > 10)
+                        currCard->value = 10;
+                    
+                    for(int e=1; e <=13; e++){
+                        it = hand.begin();
+                        it++; it++; it++; it++;
+                        currCard = *it;
+                        currCard->value = e;
+                        currCard->run_value = e;
+                        if(e > 10)
+                            currCard->value = 10;
+                        prev_value = e;
+                        it = hand.begin();
+                        while(it != hand.end()){
+                            currCard = *it;
+                            if(currCard->run_value != prev_value)
+                                break;
+                            else
+                                it++;
+                        }
+                        if(it == hand.end())
+                            continue;   //all cards have the same value, i.e. this hand contains 5 cards of the same type which doesn't exist
+                        
+                        sorted_hand = hand;
+                        sorted_hand.sort(compare_cardvalue);
+                        it = sorted_hand.begin();
+                        fifteens = 2.0*count_fifteens_trim(numCalcs,0, sorted_hand, it);
+                        pairs = 2.0*count_pairs(sorted_hand);
+                        runs = (float)count_runs(sorted_hand);
+                        nobs = 0.25*count_cards_by_symbol(sorted_hand,11);    //not going to count flushed because they are so rare in the crib
+                        weighted_score += fifteens + pairs + runs + nobs;
+                    }// end of 5th card
+                }//end of 4th card
+            }//end of 3rd card
+            weighted_score = weighted_score / NUM_COMBOS;
+            myFile<<a<<","<<b<<","<<weighted_score<<"\n";
+        }//end of 2nd card
+    }//end of 1st card  
+    myFile.close();                
+}
+
 int main() {
     Deck deck;
     Card* currCard;
@@ -714,7 +800,8 @@ int main() {
     //deal the cards, order the cards in descending order
     deck.dealHands(myHand, opponentHand);
 
-    //count_points_benchmark(&deck, myHand, opponentHand);
+    /*
+    count_points_benchmark(&deck, myHand, opponentHand);
 
     print_hand(myHand);
 
@@ -725,6 +812,9 @@ int main() {
 
     cout<<"Discard cards: \n";
     print_hand(discard);
+    */
+
+    calculate_discard_lookup_table();
 
     return 0;
 }
