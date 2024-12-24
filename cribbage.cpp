@@ -37,7 +37,8 @@ class Deck {       // The class
         int cards_per_hand;
 };
 
-
+//constructor
+//creates the Deck
 Deck::Deck(){
     Card* currCard;
     //using lists for the hands because they are doubly linked lists, placing
@@ -122,6 +123,9 @@ Deck::Deck(){
     cout<<"Deck generated!\n";
 }
 
+//randomly shuffles the deck
+//uses on internal class members
+//shuffledDeck is the object to use
 void Deck::Shuffle(){
     //shuffle the deck
     myDeck = shuffledDeck;
@@ -137,6 +141,8 @@ void Deck::Shuffle(){
     cout<<"Deck shuffled\n";
 }
 
+//test function
+//prints the shuffled deck
 void Deck::printDeck(){
 //test print the entire deck
     for(int i = 0; i < 52; i++){
@@ -145,6 +151,20 @@ void Deck::printDeck(){
     }
 }
 
+
+//test function... print the hand
+void print_hand(list<Card*> hand){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    for (it=hand.begin(); it!=hand.end(); ++it){
+        currCard = *it;
+        cout<<currCard->symbol<<currCard->suit<<'\n';
+    }
+    cout<<'\n';
+}
+
+//test function
+//can create custom hands for each player
 void Deck::assignCustomHands(list<Card*> &hand1, list<Card*> &hand2){
     hand1.push_back(myDeckCustomHand[11]);
     hand1.push_back(myDeckCustomHand[10]);
@@ -159,6 +179,8 @@ void Deck::assignCustomHands(list<Card*> &hand1, list<Card*> &hand2){
     hand2.push_back(myDeckCustomHand[0]);
 }
 
+//deals cards to each player
+//from the member object shuffledDeck
 void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
    Card* currCard;
    list<Card*>::iterator it;
@@ -198,6 +220,9 @@ void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
    }
 }
 
+//this needs to be to return cards back to the deck
+//it's helpful to have the cards physically removed
+//from the deck for the duration of the hand
 void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
     Card* currCard;
     list<Card*>::iterator it;
@@ -216,16 +241,6 @@ void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
         hand2.pop_front();
         it = hand2.begin();
     }
-}
-
-void print_hand(list<Card*> hand){
-    Card* currCard;    
-    list<Card*>::iterator it;
-    for (it=hand.begin(); it!=hand.end(); ++it){
-        currCard = *it;
-        cout<<currCard->symbol<<currCard->suit<<'\n';
-    }
-    cout<<'\n';
 }
 
 bool is_hand_sorted(list<Card*> hand){
@@ -277,7 +292,7 @@ int count_fifteens(int &numCalcs, int sum, list<Card*> &hand, list<Card*>::itera
     return count;
 }
 
-//trimming unnecessary checks by detecting when the end
+//trimming unnecessary checks by detecting when the end of
 //the highest level recursive call reaches the end of 
 //the hand and the running sum is too low to reach 15.
 //At that point, there is no need to go further into the
@@ -334,6 +349,10 @@ int count_pairs(list<Card*> &hand){
     return count;
 }
 
+//returns the number of points in the hand
+//awarded to the player due to runs
+//takes into account runs of different sizes
+//and multiple runs in one hand
 int count_runs(list<Card*> hand){
     list<Card*> pair_cards, no_pair_hand;
     Card *currCard1, *currCard2;
@@ -415,6 +434,8 @@ int count_runs(list<Card*> hand){
     return count;
 }
 
+//used in calculating the optimal score of a hand
+//specifically used to weight the possibility of scoring knobs
 int count_cards_of_suit(list<Card*> hand, int suit){
     Card* currCard;    
     list<Card*>::iterator it;
@@ -429,6 +450,9 @@ int count_cards_of_suit(list<Card*> hand, int suit){
     return suit_count;
 }
 
+//used in calculating the optimal score of a hand
+//specifically used to weight the possibility of scoring knobs
+//used to check for the number of Jacks for nobs
 int count_cards_by_symbol(list<Card*> hand, int card_val){
     Card* currCard;    
     list<Card*>::iterator it;
@@ -443,6 +467,8 @@ int count_cards_by_symbol(list<Card*> hand, int card_val){
     return card_count;
 }
 
+//calculates the weighted point value of nobs for
+//a given hand, given the unknown of the cut card
 float count_weighted_points_nobs(list<Card*> hand,list<Card*> discard_hand){
     Card* currCard;    
     list<Card*>::iterator it1;
@@ -468,6 +494,10 @@ float count_weighted_points_nobs(list<Card*> hand,list<Card*> discard_hand){
     return weighted_nobs_score;
 }
 
+//benchmarking function
+//arguments must be a deck and an already dealt hand
+//function will print the hand of each player, number of points,
+//and the time it took to calculate the score of each hand
 void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
     Card* currCard;    
     list<Card*>::iterator it;
@@ -509,6 +539,8 @@ void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
     cout<<"Average time of each search in ns: "<<time_complexity<<"\n";
 }
 
+//returns the weighted value of the hand
+//this doesnt account for flushes yet?
 float calculate_weighted_hand_value(list<Card*> hand){
     Card* currCard;
     currCard = new Card;
@@ -567,6 +599,8 @@ float calculate_weighted_hand_value(list<Card*> hand){
         //print_hand(hand);
         it = hand.begin();
         cumulative_score += 2*count_fifteens_trim(numCalcs,0, hand, it) + 2*count_pairs(hand) + count_runs(hand);
+        
+        //remove the hypothetical cut card
         it = hand.begin();
         while(it != hand.end()){
             currCard = *it;
@@ -582,12 +616,18 @@ float calculate_weighted_hand_value(list<Card*> hand){
     return weighted_value;
 }
 
+//optimal hand and discard hand should come in empty and will be populated by the function
+//hand is the 6 card hand dealt to the player
+//there should be some quality check of arguments for this function
+//the hand will have cards ordered 1-2-3-4-5-6, for future comments
 void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
     list<Card*> discard_stage, optimal_hand_stage;
     float highest_score = 0.0, current_score = 0.0;
     int suit_count = 0, suit = -1;
 
     //trimming effort, check if there is a flush possibility
+    //with 6 cards, there can't be more than one suit with
+    //possible flush
     for(int i=0; i < 4; i++){
         suit_count = count_cards_of_suit(hand, i);
         if(suit_count >= 4){
@@ -608,6 +648,11 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
     optimal_hand_stage.pop_front();
     discard_stage.push_back(optimal_hand_stage.front());
     optimal_hand_stage.pop_front();
+
+    //the first discard/hand combination tried is 1-2 / 3-4-5-6 
+    //each outer loop will switch the first card of the discard combo
+    //the inner loop swaps out the other discard until all combos are checked
+    //the inner loop uses factorial to prevent repeating a hand/discard combination
     for(int i=0; i<(HAND_SIZE-1); i++){
         current_score = calculate_weighted_hand_value(optimal_hand_stage);
         current_score += count_weighted_points_nobs(optimal_hand_stage, discard_stage);
@@ -632,6 +677,14 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
             }
         }
         //print_hand(discard_stage);
+
+        //now we rotate the card combinations without changing order
+        //on the first iteration of the outer loop, these 5 combos are checked:
+        //1-2 / 3-4-5-6 (already checked above)
+        //1-3 / 4-5-6-2
+        //1-4 / 5-6-2-3
+        //1-5 / 6-2-3-4
+        //1-6 / 2-3-4-5
         for(int j=0; j<(factorial_iterator-1); j++){
             //this is where we would calculate the scoring potential
             //of each combination
@@ -666,18 +719,38 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
         optimal_hand_stage.push_back(discard_stage.back());
         discard_stage.pop_back();
 
+        //at this point your discard_stage should only have the master
+        //discard card used for this outer loop, and optimal hand will have
+        //the other cards in order
+
         for(int k = 0; k < (HAND_SIZE - 1 - factorial_iterator); k++){
             optimal_hand_stage.push_back(optimal_hand_stage.front());
             optimal_hand_stage.pop_front();
         }
 
+
+
         optimal_hand_stage.push_back(discard_stage.back());
         discard_stage.pop_back();
+
+        //now all cards are in optimal_hand_stage, in order,
+        //the front card will be the next master discard card
+        //after the first iteration of outer loop, the order 
+        //is 2-3-4-5-6-1, for example
 
         discard_stage.push_back(optimal_hand_stage.front());
         optimal_hand_stage.pop_front();
         discard_stage.push_back(optimal_hand_stage.front());
         optimal_hand_stage.pop_front();
+
+        //ready for the next iteration... at this point, in order,
+        //for successive loop iterations the lists will look like this:
+        //2-3 / 4-5-6-1
+        //3-4 / 5-6-1-2
+        //4-5 / 6-1-2-3
+        //5-6 / 1-2-3-4
+        //... we don't need 6 as the master card, because it's already
+        //been combined with every other possible card in the discard
 
         factorial_iterator--;
     }
@@ -772,7 +845,7 @@ void calculate_discard_lookup_table(void){
                         fifteens = 2.0*count_fifteens_trim(numCalcs,0, sorted_hand, it);
                         pairs = 2.0*count_pairs(sorted_hand);
                         runs = (float)count_runs(sorted_hand);
-                        nobs = 0.25*count_cards_by_symbol(sorted_hand,11);    //not going to count flushed because they are so rare in the crib
+                        nobs = 0.25*count_cards_by_symbol(sorted_hand,11);    //not going to count flushes because they are so rare in the crib
                         weighted_score += fifteens + pairs + runs + nobs;
                     }// end of 5th card
                 }//end of 4th card
@@ -814,7 +887,9 @@ int main() {
     print_hand(discard);
     */
 
-    calculate_discard_lookup_table();
+    //calculate_discard_lookup_table();
+
+    //start gameplay:
 
     return 0;
 }
