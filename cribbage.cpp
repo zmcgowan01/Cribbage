@@ -12,6 +12,7 @@ using namespace std;
 
 
 const int HAND_SIZE = 6;
+const int PLAY_HAND_SIZE = 4;
 
 struct Card{
     int value;
@@ -28,7 +29,7 @@ class Deck {       // The class
         void printDeck();
         void assignCustomHands(list<Card*> &hand1, list<Card*> &hand2);
         void dealHands(list<Card*> &hand1, list<Card*> &hand2);
-        void returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2);
+        void returnCardsToDeck(list<Card*> &hand1);
     private:
         vector<Card*> myDeck, myDeckCustomHand, shuffledDeck, shuffledTestDeck;
         //stack<Card*> shuffledDeck, shuffledTestDeck;
@@ -153,11 +154,17 @@ void Deck::printDeck(){
 
 //test function... print the hand
 void print_hand(list<Card*> hand){
-    Card* currCard;    
+    Card* currCard;
+    int numCards = 0;    
     list<Card*>::iterator it;
     for (it=hand.begin(); it!=hand.end(); ++it){
         currCard = *it;
         cout<<currCard->symbol<<currCard->suit<<'\n';
+        numCards++;
+    }
+
+    for(int i=0; i++; i < PLAY_HAND_SIZE-numCards){
+        cout<<"--\n";
     }
     cout<<'\n';
 }
@@ -222,7 +229,7 @@ void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
 //this needs to be to return cards back to the deck
 //it's helpful to have the cards physically removed
 //from the deck for the duration of the hand
-void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
+void Deck::returnCardsToDeck(list<Card*> &hand1){
     Card* currCard;
     list<Card*>::iterator it;
     it = hand1.begin();
@@ -231,14 +238,6 @@ void Deck::returnCardsToDeck(list<Card*> &hand1, list<Card*> &hand2){
         shuffledDeck.push_back(currCard);
         hand1.pop_front();
         it = hand1.begin();
-    }
-
-    it = hand2.begin();
-    while(it != hand2.end()){
-        currCard = *it;
-        shuffledDeck.push_back(currCard);
-        hand2.pop_front();
-        it = hand2.begin();
     }
 }
 
@@ -530,7 +529,8 @@ void count_points_benchmark(Deck *deck, list<Card*> hand1, list<Card*> hand2){
         time_complexity += ((float)end-(float)start);
         cout<<"total points: "<<total_points<<"\n\n";
     
-        deck->returnCardsToDeck(hand1, hand2);
+        deck->returnCardsToDeck(hand1);
+        deck->returnCardsToDeck(hand2);
         deck->Shuffle();
         deck->dealHands(hand1, hand2);
     }
@@ -859,9 +859,10 @@ void calculate_discard_lookup_table(void){
 int main() {
     Deck deck;
     Card* currCard;
-    list<Card*> myHand, opponentHand, discard, optimal_hand;
+    list<Card*> myHand, opponentHand, discard, optimal_hand, exposedOpponentHand;
     list<Card*>::iterator it;
     clock_t start, end; 
+    char inp;
     //assign specific cards to hands for unit testing
     //deck.assignCustomHands(myHand, opponentHand);
 
@@ -870,8 +871,6 @@ int main() {
     //deck.printDeck();
 
     //deal the cards, order the cards in descending order
-    deck.dealHands(myHand, opponentHand);
-
     /*
     count_points_benchmark(&deck, myHand, opponentHand);
 
@@ -889,6 +888,27 @@ int main() {
     //calculate_discard_lookup_table();
 
     //start gameplay:
+    cout<<"Type 'q' to quit, any other key to begin game\n";
+    cin>>inp;
+    while(inp !='q'){
+
+
+        deck.dealHands(myHand, opponentHand);
+        cout<<"\n\nHands dealt\n";
+        cout<<"Your hand:\n";
+        print_hand(myHand);
+        cout<<"\nOpponent's hand:\n";
+        print_hand(exposedOpponentHand);
+
+        deck.returnCardsToDeck(myHand);
+        deck.returnCardsToDeck(opponentHand);
+        deck.Shuffle();
+        cout<<"Type 'q' to quit, any other key to deal next hand\n";
+        cin>>inp;
+    }
+    
+
+
 
     return 0;
 }
