@@ -1,5 +1,6 @@
 #include <fstream>
 #include <iostream>
+#include <sstream>
 #include <cstdlib>
 #include <stack>
 #include <string>
@@ -13,6 +14,8 @@ using namespace std;
 
 const int HAND_SIZE = 6;
 const int PLAY_HAND_SIZE = 4;
+
+float kitty_weighted_scores[13][13];
 
 struct Card{
     int value;
@@ -163,7 +166,7 @@ void print_hand(list<Card*> hand){
         numCards++;
     }
 
-    for(int i=0; i++; i < PLAY_HAND_SIZE-numCards){
+    for(int i=0; i < (PLAY_HAND_SIZE-numCards);  i++){
         cout<<"--\n";
     }
     cout<<'\n';
@@ -619,7 +622,7 @@ float calculate_weighted_hand_value(list<Card*> hand){
 //hand is the 6 card hand dealt to the player
 //there should be some quality check of arguments for this function
 //the hand will have cards ordered 1-2-3-4-5-6, for future comments
-void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard){
+void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*> *discard, bool myCrib){
     list<Card*> discard_stage, optimal_hand_stage;
     float highest_score = 0.0, current_score = 0.0;
     int suit_count = 0, suit = -1;
@@ -659,6 +662,11 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
             if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
                 current_score += 4 + ((13-suit_count) / 52);
         }
+        if(myCrib)
+            current_score += kitty_weighted_scores[discard_stage.front()->run_value][discard_stage.back()->run_value];
+        else
+            current_score -= kitty_weighted_scores[discard_stage.front()->run_value][discard_stage.back()->run_value];
+        
         if(current_score > highest_score){
             highest_score = current_score;
             optimal_hand->clear();
@@ -697,6 +705,11 @@ void choose_optimal_hand(list<Card*> hand, list<Card*> *optimal_hand, list<Card*
                 if(count_cards_of_suit(optimal_hand_stage, suit) == 4)
                     current_score += 4 + ((13-suit_count) / 52);
             }
+            if(myCrib)
+                current_score += kitty_weighted_scores[discard_stage.front()->run_value][discard_stage.back()->run_value];
+            else
+                current_score -= kitty_weighted_scores[discard_stage.front()->run_value][discard_stage.back()->run_value];
+
             if(current_score > highest_score){
                 highest_score = current_score;
                 optimal_hand->clear();
@@ -850,21 +863,40 @@ void calculate_discard_lookup_table(void){
                 }//end of 4th card
             }//end of 3rd card
             weighted_score = weighted_score / NUM_COMBOS;
-            myFile<<a<<","<<b<<","<<weighted_score<<"\n";
+            myFile<<weighted_score<<"\n";
         }//end of 2nd card
     }//end of 1st card  
     myFile.close();                
 }
 
+void lookupCribWeightedValues(void){
+    ifstream myFile("crib_lookup.csv");
+    string line;
+    float val;
+    for(int i=1; i <= 13; i++){
+        for(int j=1; j <=13; j++){
+            getline(myFile,line);
+            stringstream ss(line);
+            ss>>val;
+            kitty_weighted_scores[i][j] = val;
+        }
+    }
+}
+
 int main() {
     Deck deck;
     Card* currCard;
-    list<Card*> myHand, opponentHand, discard, optimal_hand, exposedOpponentHand;
+    list<Card*> myHand, cpuHand, kitty, discard, optimal_hand, exposedCpuHand;
     list<Card*>::iterator it;
     clock_t start, end; 
     char inp;
+    int myScore, cpuScore = 0;
+    int discardIndex1, discardIndex2 = 0;
+    int iter = 0;
+    bool cpuCrib = false;
     //assign specific cards to hands for unit testing
     //deck.assignCustomHands(myHand, opponentHand);
+    lookupCribWeightedValues();
 
     deck.Shuffle();
     
@@ -884,7 +916,6 @@ int main() {
     cout<<"Discard cards: \n";
     print_hand(discard);
     */
-
     //calculate_discard_lookup_table();
 
     //start gameplay:
@@ -893,16 +924,60 @@ int main() {
     while(inp !='q'){
 
 
-        deck.dealHands(myHand, opponentHand);
+        deck.dealHands(myHand, cpuHand);
         cout<<"\n\nHands dealt\n";
         cout<<"Your hand:\n";
         print_hand(myHand);
         cout<<"\nOpponent's hand:\n";
-        print_hand(exposedOpponentHand);
+        print_hand(exposedCpuHand);
+
+        cout<<"Choose two cards to discard:\n";
+
+        while(discardIndex1 <= 0 || discardIndex1 >6){
+            cin>>discardIndex1;
+        }
+
+        while((discardIndex2 <= 0 || discardIndex2 >6) && discardIndex1 != discardIndex2){
+            cin>>discardIndex2;
+        }
+
+        iter = 1;
+        it = myHand.begin();
+        currCard = *it;
+        while(it != myHand.end()){
+            if(iter == discardIndex1 || iter == discardIndex2){
+                kitty.push_back(currCard);
+                myHand.remove(currCard);
+            }
+            iter++;
+            it++;
+        }
+
+        optimal_hand.clear();
+        discard.clear();
+        choose_optimal_hand(cpuHand, &optimal_hand, &discard, cpuCrib);
+
+        kitty.push_back(discard.front());
+        kitty.push_back(discard.back());
+
+        cout<<"Your hand:\n";
+        print_hand(myHand);
+
+        cout<<"\nOpponent's hand:\n";
+        print_hand(optimal_hand);
+
+        cout<<"\n kitty:\n";
+        print_hand(kitty);
+
+
 
         deck.returnCardsToDeck(myHand);
-        deck.returnCardsToDeck(opponentHand);
+        deck.returnCardsToDeck(cpuHand);
+        deck.returnCardsToDeck(kitty);
         deck.Shuffle();
+
+        cpuCrib = cpuCrib xor true;
+
         cout<<"Type 'q' to quit, any other key to deal next hand\n";
         cin>>inp;
     }
