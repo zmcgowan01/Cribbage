@@ -127,30 +127,23 @@ Deck::Deck(){
     cout<<"Deck generated!\n";
 }
 
-//returns a random card from the deck
-//as a cut card
-Card* Deck::getCutCard(void){
-    srand(time(NULL));
-    int r = rand() % 46;
-    return shuffledDeck[r];
-}
-
 //randomly shuffles the deck
 //uses on internal class members
 //shuffledDeck is the object to use
 void Deck::Shuffle(){
     //shuffle the deck
+    int r = 0;
     myDeck = shuffledDeck;
     shuffledDeck.clear();
     shuffledTestDeck.clear();
     for(int i = 52; i > 0; i--){
         srand(time(NULL));
-        int r = rand() % i;
+        r = rand() % i;
         shuffledDeck.push_back(myDeck[r]);
         shuffledTestDeck.push_back(myDeck[r]);
         myDeck.erase(myDeck.begin() + r);
     }
-    cout<<"Deck shuffled\n";
+    //cout<<"Deck shuffled\n";
 }
 
 //test function
@@ -178,7 +171,7 @@ void print_hand(list<Card*> hand){
     for(int i=0; i < (PLAY_HAND_SIZE-numCards);  i++){
         cout<<"--\n";
     }
-    cout<<'\n';
+    //cout<<'\n';
 }
 
 //test function
@@ -190,10 +183,11 @@ void Deck::assignCustomHands(list<Card*> &hand1, list<Card*> &hand2){
     hand1.push_back(myDeckCustomHand[9]);
     hand1.push_back(myDeckCustomHand[8]);
 
-    hand2.push_back(myDeckCustomHand[3]);
+    hand2.push_back(myDeckCustomHand[51]);
+    hand2.push_back(myDeckCustomHand[37]);
+    hand2.push_back(myDeckCustomHand[47]);
+    hand2.push_back(myDeckCustomHand[18]);
     hand2.push_back(myDeckCustomHand[2]);
-    hand2.push_back(myDeckCustomHand[1]);
-    hand2.push_back(myDeckCustomHand[0]);
     hand2.push_back(myDeckCustomHand[0]);
 }
 
@@ -236,6 +230,14 @@ void Deck::dealHands(list<Card*> &hand1, list<Card*> &hand2){
         shuffledDeck.pop_back();
     }
    }
+}
+
+//returns a random card from the deck
+//as a cut card
+Card* Deck::getCutCard(void){
+    srand(time(NULL));
+    int r = rand() % 40;
+    return shuffledDeck[r];
 }
 
 //this needs to be to return cards back to the deck
@@ -475,6 +477,34 @@ int count_cards_by_symbol(list<Card*> hand, int card_val){
         it++;
     }
     return card_count;
+}
+
+int check_flush(list<Card*> hand, bool is_kitty, Card* cut){
+    int suit_count = 0;
+
+    for(int i=0; i < 4; i++){
+        suit_count = count_cards_of_suit(hand, i);
+        if(suit_count >= 5)
+                return suit_count;
+        if(!is_kitty){
+            if(suit_count == 4 && cut->i_suit != i)
+                return suit_count;
+        }
+    }
+    return 0;
+}
+
+int count_knobs(list<Card*> hand, Card* cutCard){
+    Card* currCard;    
+    list<Card*>::iterator it;
+    it = hand.begin();
+    while(it != hand.end()){
+        currCard = *it;
+        if(currCard->run_value == 11 && currCard != cutCard && currCard->i_suit == cutCard->i_suit)
+            return 1;
+        it++;
+    }
+    return 0;
 }
 
 //calculates the weighted point value of nobs for
@@ -899,7 +929,7 @@ int main() {
     list<Card*>::iterator it;
     clock_t start, end; 
     char inp;
-    int myScore=0, cpuScore = 0;
+    int myScore=0, cpuScore = 0, i_temp = 0;
     int discardIndex1 = 0, discardIndex2 = 0;
     int iter = 0, numCalcs = 0;
     bool cpuCrib = false;
@@ -908,7 +938,10 @@ int main() {
     lookupCribWeightedValues();
 
     deck.Shuffle();
-    
+/*    deck.assignCustomHands(myHand, cpuHand);
+    print_hand(cpuHand);
+    cpuHand.sort(compare_cardvalue);
+  */  
     //deck.printDeck();
 
     //deal the cards, order the cards in descending order
@@ -934,11 +967,15 @@ int main() {
 
 
         deck.dealHands(myHand, cpuHand);
-        cout<<"\n\nHands dealt\n";
+        //cout<<"\n\nHands dealt\n";
+        if(cpuCrib)
+            cout<<"cpu Crib\n";
+        else
+            cout<<"My Crib\n\n";
         cout<<"Your hand:\n";
         print_hand(myHand);
-        cout<<"\nOpponent's hand:\n";
-        print_hand(exposedCpuHand);
+        //cout<<"\nOpponent's hand:\n";
+        //print_hand(exposedCpuHand);
 
         cout<<"Choose two cards to discard:\n";
 
@@ -972,50 +1009,65 @@ int main() {
         kitty.push_back(discard.back());
         kitty.sort(compare_cardvalue);
 
-
-        cout<<"Your hand:\n";
-        print_hand(myHand);
-
-        cout<<"\nOpponent's hand:\n";
-        print_hand(optimal_hand);
-
-        cout<<"\n kitty:\n";
-        print_hand(kitty);
-
         //randomly select cut card
         cutCard = deck.getCutCard();
-        myHand.push_front(cutCard);
-        myHand.sort(compare_cardvalue);
 
         //print cut card
-        cout<<cutCard->symbol<<cutCard->suit<<"\n";
-
-        optimal_hand.push_front(cutCard);
-        optimal_hand.sort(compare_cardvalue);
+        cout<<"Cut card: "<<cutCard->symbol<<cutCard->suit<<"\n\n";
         
-        kitty.push_front(cutCard);
-        kitty.sort(compare_cardvalue);
+        //score nibs
+        if(cutCard->run_value == 11){
+            cout<<"Nibs!\n";
+            if(cpuCrib)
+                cpuScore += 2;
+            else
+                myScore += 2;
+        }
+        //this is where the active part of the game should take place
         
         //count hand scores
+        cout<<"Your hand:\n";
+        print_hand(myHand);
+        myHand.push_front(cutCard);
+        myHand.sort(compare_cardvalue);
         it = myHand.begin();
-        myScore += 2*count_fifteens_trim(numCalcs,0, myHand, it) + 2*count_pairs(myHand) + count_runs(myHand);        
-        
+        i_temp = 2*count_fifteens_trim(numCalcs,0, myHand, it) + 2*count_pairs(myHand) + count_runs(myHand) 
+                + check_flush(myHand, false, cutCard) + count_knobs(myHand,cutCard);        
+        myScore += i_temp;
+        cout<<"Score: "<<i_temp<<"\n\n";
+
+        cout<<"Opponent's hand:\n";
+        print_hand(optimal_hand);
+        optimal_hand.push_front(cutCard);
+        optimal_hand.sort(compare_cardvalue);
         it = optimal_hand.begin();
-        cpuScore += 2*count_fifteens_trim(numCalcs,0, optimal_hand, it) + 2*count_pairs(optimal_hand) + count_runs(optimal_hand);  
-        
+        i_temp =  2*count_fifteens_trim(numCalcs,0, optimal_hand, it) + 2*count_pairs(optimal_hand) + count_runs(optimal_hand)
+                     + check_flush(optimal_hand, false, cutCard) + count_knobs(optimal_hand,cutCard);  
+        cpuScore += i_temp;
+        cout<<"Score: "<<i_temp<<"\n\n";
+
+        cout<<"kitty:\n";
+        print_hand(kitty);
+        kitty.push_front(cutCard);
+        kitty.sort(compare_cardvalue);
         it = kitty.begin();
         if(cpuCrib){
-            cout<<"cpu Crib\n";
-            cpuScore += 2*count_fifteens_trim(numCalcs,0, kitty, it) + 2*count_pairs(kitty) + count_runs(kitty); 
+            i_temp = 2*count_fifteens_trim(numCalcs,0, kitty, it) + 2*count_pairs(kitty) + count_runs(kitty)
+                     + check_flush(kitty, true, cutCard) + count_knobs(kitty,cutCard); 
+            cpuScore += i_temp;
         }
         else{
-            myScore += 2*count_fifteens_trim(numCalcs,0, kitty, it) + 2*count_pairs(kitty) + count_runs(kitty);     
-            cout<<"My Crib\n";
+            i_temp = 2*count_fifteens_trim(numCalcs,0, kitty, it) + 2*count_pairs(kitty) + count_runs(kitty)
+                     + check_flush(kitty, true, cutCard)  + count_knobs(kitty,cutCard); 
+            myScore += i_temp;    
         }
+        cout<<"Score: "<<i_temp<<"\n\n";
+
 
         //clean up cards
         myHand.remove(cutCard);
         optimal_hand.remove(cutCard);
+        kitty.remove(cutCard);
         deck.returnCardsToDeck(myHand);
         deck.returnCardsToDeck(optimal_hand);
         deck.returnCardsToDeck(kitty);
@@ -1028,7 +1080,7 @@ int main() {
 
         cpuCrib = cpuCrib xor true;
         discardIndex1 = discardIndex2 = 0;
-        cout<<"Type 'q' to quit, any other key to deal next hand\n";
+        cout<<"------------------------------------------\n";
         cin>>inp;
     }
     
